@@ -68,18 +68,18 @@ let idx=0,name="",score=0,answers=[];
 const $=id=>document.getElementById(id);
 const teacherUrl=SHEET_URL.trim();
 $("begin").onclick=()=>{name=$("name").value.trim();if(!name){alert("Masukkan nama terlebih dahulu.");return}idx=0;score=0;answers=[];$("start").classList.add("hidden");$("quiz").classList.remove("hidden");render()};
-function render(){const x=questions[idx];$("counter").textContent=`Masalah ${idx+1} dari ${questions.length} • ${x.p} poin`;$("progress").style.width=`${idx/questions.length*100}%`;$("question").textContent=x.q;$("scenario").textContent=x.s;$("options").innerHTML=x.o.map((v,i)=>`<label class="option"><input type="radio" name="ans" value="${i}"> ${String.fromCharCode(65+i)}. ${v}</label>`).join("");$("next").disabled=true;$("feedback").textContent="";document.querySelectorAll('input[name="ans"]').forEach(r=>r.addEventListener("change",()=>{$("next").disabled=false}))}
+function render(){const x=questions[idx];const choices=x.o.map((text,i)=>({text,index:i}));for(let i=choices.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[choices[i],choices[j]]=[choices[j],choices[i]];}x._shuffled=choices;$("counter").textContent=`Masalah ${idx+1} dari ${questions.length} • ${x.p} poin`;$("progress").style.width=`${idx/questions.length*100}%`;$("question").textContent=x.q;$("scenario").textContent=x.s;$("options").innerHTML=choices.map((v,i)=>`<label class="option"><input type="radio" name="ans" value="${v.index}"> ${String.fromCharCode(65+i)}. ${v.text}</label>`).join("");$("next").disabled=true;$("feedback").textContent="";document.querySelectorAll('input[name="ans"]').forEach(r=>r.addEventListener("change",()=>{$("next").disabled=false}))}
 $("next").onclick=()=>{const sel=document.querySelector('input[name="ans"]:checked');if(!sel)return;const x=questions[idx],choice=+sel.value,ok=choice===x.a;if(ok)score+=x.p;answers.push({question:x.q,selected:x.o[choice],correct:x.o[x.a],ok,points:ok?x.p:0,explanation:x.e});idx++;if(idx<questions.length)render();else finish()};
 function finish(){ $("quiz").classList.add("hidden");$("end").classList.remove("hidden");$("greeting").textContent=`Hebat, ${name}!`;$("score").textContent=`${score} / 100`;const right=answers.filter(x=>x.ok).length;$("right").textContent=right;$("wrong").textContent=questions.length-right;$("message").textContent=score>=85?"Pemahaman sangat kuat.":score>=70?"Pemahaman sudah baik; beberapa konsep masih perlu diperkuat.":"Gunakan rangkuman pembahasan untuk mengulang konsep yang belum tepat.";$("summary").innerHTML=answers.map((x,i)=>`<div class="result ${x.ok?"correct":"wrong"}"><b>${i+1}. ${x.ok?"Benar":"Perlu diperbaiki"} — ${x.points} poin</b><br>Jawabanmu: ${x.selected}<br>Jawaban yang tepat: ${x.correct}<br><span class="small">${x.explanation}</span></div>`).join("");saveToSheet()};
 async function saveToSheet(){
-  if(!teacherUrl){
+  if(!SHEET_URL.trim() || SHEET_URL.includes("MASUKKAN_URL_WEB_APP_DI_SINI")){
     $("saving").textContent="Google Sheets belum terhubung. Hasil tetap dapat diunduh sebagai CSV.";
     return;
   }
   const payload={timestamp:new Date().toISOString(),name,score,correct:answers.filter(x=>x.ok).length,total:15,answers};
   $("saving").textContent="Mengirim hasil ke Google Sheets…";
   try{
-    await fetch(teacherUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+    await fetch(SHEET_URL.trim(),{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
     $("saving").textContent="Hasil telah dikirim ke Google Sheets.";
   }catch(e){
     $("saving").textContent="Pengiriman gagal. Hasil tetap dapat diunduh sebagai CSV.";
