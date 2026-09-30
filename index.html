@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Game KKA — Tantangan 15 Masalah</title>
+<style>
+:root{--bg:#f5f7fb;--card:#fff;--ink:#172033;--muted:#64748b;--accent:#3157d5;--ok:#17834b;--bad:#c0392b;--line:#dbe2ee}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:900px;margin:auto;padding:28px 18px}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px;box-shadow:0 8px 25px #17203310}
+h1{margin:.2rem 0 .5rem;font-size:clamp(25px,4vw,38px)}h2{margin:.2rem 0 1rem}.muted{color:var(--muted)}.pill{display:inline-block;padding:5px 10px;border-radius:999px;background:#eef2ff;color:#3157d5;font-size:13px;font-weight:700}
+input{width:100%;padding:13px 14px;border:1px solid var(--line);border-radius:10px;font-size:16px;margin:8px 0 14px}
+button{border:0;border-radius:10px;padding:12px 17px;font-weight:700;cursor:pointer;font-size:15px;background:var(--accent);color:white}button.secondary{background:#e9edf5;color:var(--ink)}button:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;gap:10px;flex-wrap:wrap}.bar{height:9px;background:#e8edf5;border-radius:99px;overflow:hidden;margin:12px 0 20px}.bar>div{height:100%;background:var(--accent);transition:width .2s}
+.option{display:block;border:1px solid var(--line);padding:14px;border-radius:12px;margin:10px 0;cursor:pointer}.option:hover{border-color:#9aaee8;background:#f7f9ff}.option input{width:auto;margin:0 9px 0 0}
+.result{border-left:5px solid var(--accent);padding:12px 15px;background:#f7f9ff;border-radius:8px;margin:10px 0}.correct{border-left-color:var(--ok)}.wrong{border-left-color:var(--bad)}
+.score{font-size:48px;font-weight:800}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}.stat{padding:14px;border:1px solid var(--line);border-radius:12px}.stat b{display:block;font-size:22px}
+.hidden{display:none}.notice{padding:12px;border-radius:10px;background:#fff7df;margin:12px 0}.small{font-size:13px}
+</style>
+</head>
+<body><main>
+<section id="start" class="card">
+<span class="pill">KKA • 15 Tantangan</span><h1>Game Tantangan Koding & Kecerdasan Artifisial</h1>
+<p class="muted">Uji pemahaman setelah membaca Modul 1. Setiap masalah memiliki satu jawaban terbaik. Skor maksimum <b>100 poin</b>.</p>
+<label for="name"><b>Nama siswa</b></label><input id="name" maxlength="80" placeholder="Masukkan nama lengkap">
+<button id="begin">Mulai Game</button>
+</section>
+
+<section id="quiz" class="card hidden">
+<div class="pill" id="counter"></div><div class="bar"><div id="progress"></div></div>
+<h2 id="question"></h2><p id="scenario" class="muted"></p><div id="options"></div>
+<div class="actions"><button id="next" disabled>Jawab & Lanjut</button></div><p id="feedback" aria-live="polite"></p>
+</section>
+
+<section id="end" class="card hidden">
+<span class="pill">Hasil Akhir</span><h1 id="greeting"></h1><div class="score" id="score"></div>
+<p id="message"></p><div class="grid"><div class="stat"><b id="right"></b>Benar</div><div class="stat"><b id="wrong"></b>Salah</div><div class="stat"><b>100</b>Maksimum</div></div>
+<div id="saving" class="notice"></div><h2>Rangkuman Penyelesaian Masalah</h2><div id="summary"></div>
+<div class="actions"><button id="download">Unduh Hasil CSV</button><button class="secondary" id="restart">Main Lagi</button></div>
+</section>
+</main>
+<script>
+/* =========================================================
+   KONFIGURASI GOOGLE SHEETS
+   Ganti nilai SHEET_URL dengan URL Web App Google Apps Script
+   milik guru. Siswa tidak akan melihat atau mengisi URL ini.
+   ========================================================= */
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbwt8JLtkqRcqw2BGE_Lh3eS3fiShgeU2Vyxnw7OEfdwRFweADrnkt-zUWIp3wobrKHe/exec";
+
+const questions=[
+{q:"Sekolah ingin membuat sistem kelulusan. Jika nilai siswa ≥75 tampil “Lulus”, selain itu “Remedial”. Struktur kontrol yang tepat?",s:"Guru ingin keputusan otomatis berdasarkan satu kondisi.",o:["Sekuensial","Percabangan (If-Else)","Perulangan","Abstraksi"],a:1,e:"Percabangan memilih tindakan berdasarkan kondisi benar atau salah.",p:7},
+{q:"Kamu membuat instruksi robot: maju 2 langkah, belok kanan, maju 3 langkah. Instruksi dijalankan berurutan tanpa pengulangan. Ini contoh…",s:"Tidak ada keputusan atau pengulangan.",o:["Sekuensial","Percabangan","While loop","Pengenalan pola"],a:0,e:"Sekuensial mengeksekusi instruksi baris demi baris dari atas ke bawah.",p:7},
+{q:"Saat memperbaiki aplikasi sekolah yang besar, tim memecahnya menjadi modul login, data siswa, nilai, dan laporan. Pilar berpikir komputasional yang digunakan adalah…",s:"Masalah besar dipecah menjadi bagian kecil yang lebih mudah dikelola.",o:["Abstraksi","Dekomposisi","Pengenalan pola","Algoritma"],a:1,e:"Dekomposisi berarti memecah masalah kompleks menjadi sub-masalah.",p:7},
+{q:"Seorang siswa melihat bahwa beberapa kasus error aplikasi memiliki pola yang sama seperti error pada proyek sebelumnya. Ia menggunakan kesamaan itu untuk mencari penyebab.",s:"Ia mencari kesamaan atau pola berulang dari pengalaman sebelumnya.",o:["Dekomposisi","Abstraksi","Pengenalan pola","Flowchart"],a:2,e:"Pengenalan pola mencari kesamaan, tren, atau pola berulang.",p:7},
+{q:"Untuk membuat peta rute kereta, kamu hanya menampilkan stasiun dan jalur penting, tanpa pepohonan atau detail jalan. Pilar BK yang diterapkan adalah…",s:"Detail yang tidak relevan diabaikan agar fokus pada informasi penting.",o:["Abstraksi","Dekomposisi","Perulangan","Debugging"],a:0,e:"Abstraksi berfokus pada informasi relevan dan mengabaikan detail yang tidak penting.",p:7},
+{q:"Kamu menulis langkah 1–10 untuk merakit meja lipat agar orang lain dapat mengikuti prosedur dengan benar. Ini merupakan…",s:"Instruksi disusun terurut langkah demi langkah.",o:["Perancangan algoritma","Pengenalan pola","Machine Learning","Data mentah"],a:0,e:"Algoritma adalah rangkaian instruksi terurut untuk menyelesaikan masalah.",p:7},
+{q:"Guru meminta siswa menggambarkan alur: Mulai → Input nilai → cek nilai ≥75? → Lulus/Remedial → Selesai. Bentuk representasi yang paling sesuai adalah…",s:"Alur logika ingin ditampilkan secara visual menggunakan simbol standar.",o:["Flowchart","Dataset","Compiler","Generative AI"],a:0,e:"Flowchart menggambarkan alur logika secara visual menggunakan simbol standar.",p:7},
+{q:"Dalam kegiatan tanpa komputer, siswa A menjadi Robot dan siswa B memberi kartu arah seperti “Maju 2 langkah, Belok Kanan”. Tujuan utamanya adalah…",s:"Aktivitas melatih ketelitian instruksi terstruktur tanpa perangkat.",o:["Melatih instruksi/koding secara unplugged","Melatih pengolahan citra","Membuat model AI","Mengolah dataset"],a:0,e:"Moda unplugged mengajarkan konsep koding tanpa komputer melalui aktivitas fisik.",p:7},
+{q:"Sebuah tim menulis kode, menguji aplikasi, memperbaiki kesalahan, lalu merawatnya setelah digunakan. Istilah yang mencakup keseluruhan proses tersebut adalah…",s:"Kegiatannya lebih luas daripada sekadar menerjemahkan instruksi ke kode.",o:["Koding","Pemrograman","Input","Abstraksi"],a:1,e:"Pemrograman mencakup merancang, menulis kode, menguji, hingga merawat aplikasi.",p:7},
+{q:"Sebuah sistem AI belajar membedakan kucing dan anjing dari banyak contoh foto, bukan dari aturan telinga/kumis yang ditulis satu per satu. Konsep yang paling sesuai adalah…",s:"Mesin mempelajari pola dari data contoh.",o:["Machine Learning","Sekuensial","Flowchart","Pseudocode"],a:0,e:"Machine Learning mempelajari pola statistik dari data tanpa semua aturan dikodekan secara manual.",p:7},
+{q:"Model AI menghasilkan teks, gambar, atau kode baru berdasarkan pola yang dipelajarinya. Teknologi tersebut disebut…",s:"Fokusnya adalah menghasilkan konten baru.",o:["Artificial Intelligence","Generative AI","Data mentah","Flowchart"],a:1,e:"Generative AI adalah model yang dapat menciptakan konten baru seperti teks, gambar, dan kode.",p:7},
+{q:"Dataset pelatihan berisi contoh profesi dokter yang 90% laki-laki. Model kemudian cenderung mengasosiasikan dokter dengan laki-laki. Masalah etika yang perlu diperhatikan adalah…",s:"Data pelatihan tidak seimbang dapat menghasilkan keputusan yang tidak adil.",o:["Bias & diskriminasi","Sekuensial","Abstraksi","Kompilasi"],a:0,e:"Bias dapat muncul ketika data pelatihan tidak seimbang dan menghasilkan keputusan tidak adil.",p:6},
+{q:"Sekolah akan memakai aplikasi AI yang memproses nama dan identitas siswa. Prinsip etika yang paling langsung berkaitan dengan perlindungan informasi tersebut adalah…",s:"Fokus masalahnya adalah perlindungan identitas pribadi dari kebocoran.",o:["Privasi data","Perulangan","Pengenalan pola","Prediksi"],a:0,e:"Privasi data menekankan perlindungan identitas pribadi dari kebocoran dataset.",p:6},
+{q:"Guru mencatat suhu pasien: 36, 38, 39, 37. Agar data tersebut menjadi informasi bermakna, ia membuat grafik tren suhu.",s:"Angka mentah diberi konteks untuk menunjukkan pola/tren.",o:["Data mentah","Informasi bermakna","Input kode","Pseudocode"],a:1,e:"Informasi bermakna memberikan konteks pada data mentah, misalnya grafik tren suhu.",p:6},
+{q:"Kepala sekolah bertanya: “Langkah apa yang harus diambil setelah analisis data menunjukkan pola tertentu?” Tingkat analisis data yang menjawab pertanyaan itu adalah…",s:"Pertanyaannya meminta rekomendasi tindakan berdasarkan hasil analisis.",o:["Deskriptif","Diagnostik","Prediktif","Preskriptif"],a:3,e:"Preskriptif menjawab langkah apa yang harus diambil; deskriptif menjelaskan apa yang terjadi, diagnostik mengapa, dan prediktif apa yang mungkin terjadi.",p:5}
+];
+let idx=0,name="",score=0,answers=[];
+const $=id=>document.getElementById(id);
+const teacherUrl=SHEET_URL.trim();
+$("begin").onclick=()=>{name=$("name").value.trim();if(!name){alert("Masukkan nama terlebih dahulu.");return}idx=0;score=0;answers=[];$("start").classList.add("hidden");$("quiz").classList.remove("hidden");render()};
+function render(){const x=questions[idx];$("counter").textContent=`Masalah ${idx+1} dari ${questions.length} • ${x.p} poin`;$("progress").style.width=`${idx/questions.length*100}%`;$("question").textContent=x.q;$("scenario").textContent=x.s;$("options").innerHTML=x.o.map((v,i)=>`<label class="option"><input type="radio" name="ans" value="${i}"> ${String.fromCharCode(65+i)}. ${v}</label>`).join("");$("next").disabled=true;$("feedback").textContent="";document.querySelectorAll('input[name="ans"]').forEach(r=>r.addEventListener("change",()=>{$("next").disabled=false}))}
+$("next").onclick=()=>{const sel=document.querySelector('input[name="ans"]:checked');if(!sel)return;const x=questions[idx],choice=+sel.value,ok=choice===x.a;if(ok)score+=x.p;answers.push({question:x.q,selected:x.o[choice],correct:x.o[x.a],ok,points:ok?x.p:0,explanation:x.e});idx++;if(idx<questions.length)render();else finish()};
+function finish(){ $("quiz").classList.add("hidden");$("end").classList.remove("hidden");$("greeting").textContent=`Hebat, ${name}!`;$("score").textContent=`${score} / 100`;const right=answers.filter(x=>x.ok).length;$("right").textContent=right;$("wrong").textContent=questions.length-right;$("message").textContent=score>=85?"Pemahaman sangat kuat.":score>=70?"Pemahaman sudah baik; beberapa konsep masih perlu diperkuat.":"Gunakan rangkuman pembahasan untuk mengulang konsep yang belum tepat.";$("summary").innerHTML=answers.map((x,i)=>`<div class="result ${x.ok?"correct":"wrong"}"><b>${i+1}. ${x.ok?"Benar":"Perlu diperbaiki"} — ${x.points} poin</b><br>Jawabanmu: ${x.selected}<br>Jawaban yang tepat: ${x.correct}<br><span class="small">${x.explanation}</span></div>`).join("");saveToSheet()};
+async function saveToSheet(){
+  if(!teacherUrl){
+    $("saving").textContent="Google Sheets belum terhubung. Hasil tetap dapat diunduh sebagai CSV.";
+    return;
+  }
+  const payload={timestamp:new Date().toISOString(),name,score,correct:answers.filter(x=>x.ok).length,total:15,answers};
+  $("saving").textContent="Mengirim hasil ke Google Sheets…";
+  try{
+    await fetch(teacherUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(payload)});
+    $("saving").textContent="Hasil telah dikirim ke Google Sheets.";
+  }catch(e){
+    $("saving").textContent="Pengiriman gagal. Hasil tetap dapat diunduh sebagai CSV.";
+  }
+}
+$("download").onclick=()=>{let rows=[["Waktu",new Date().toLocaleString("id-ID")],["Nama",name],["Skor",score],["Benar",answers.filter(x=>x.ok).length],["Salah",answers.filter(x=>!x.ok).length],[],["No","Status","Jawaban Siswa","Jawaban Tepat","Poin","Pembahasan"]];answers.forEach((x,i)=>rows.push([i+1,x.ok?"Benar":"Salah",x.selected,x.correct,x.points,x.explanation]));const csv=rows.map(r=>r.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download=`hasil-game-KKA-${name.replace(/[^a-z0-9_-]+/gi,"-")}.csv`;a.click();URL.revokeObjectURL(a.href)};
+$("restart").onclick=()=>location.reload();
+</script></body></html>
